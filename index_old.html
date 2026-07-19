@@ -2,6 +2,9 @@
 <html lang="sv">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=0.5, maximum-scale=3, user-scalable=yes, viewport-fit=cover">
 <meta name="theme-color" content="#34472f">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -9,7 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="Toftåsen Games">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>Toftåsen Games – Maxi‑Yatzy v9</title>
+<title>Toftåsen Games – Maxi‑Yatzy v10</title>
 <style>
 :root {
   --bg:#f5f1e8; --card:#fffdf8; --ink:#1d261c; --muted:#71766f;
@@ -103,7 +106,7 @@ body.ultra th:first-child,body.ultra td:first-child{min-width:76px!important;wid
 <body>
 <div class="app">
 <section class="card watermarked">
-  <h1>TOFTÅSEN GAMES</h1>
+  <h1>TOFTÅSEN GAMES <span style="display:inline-block;margin-left:8px;padding:3px 7px;border-radius:999px;background:#1d261c;color:#fff;font-size:11px;font-weight:800">v10</span></h1>
   <div class="sub">Maxi‑Yatzy</div>
   <div class="controls">
     <label>Datum<input class="field" id="date" type="date"></label>
@@ -187,6 +190,13 @@ body.ultra th:first-child,body.ultra td:first-child{min-width:76px!important;wid
 </div>
 
 <div id="view-settings" class="hidden">
+
+  <section class="card">
+    <h2>🔄 Uppdatera appen</h2>
+    <p class="muted">Visas inte den senaste versionen? Tryck här för att ladda om utan gammal cache.</p>
+    <button type="button" class="alt" id="forceRefresh">Ladda senaste versionen</button>
+  </section>
+
   <section class="card watermarked">
     <h2>🔊 Ljudinställningar</h2>
     <div class="settings-grid">
@@ -426,15 +436,27 @@ function renderStats(){
   if(!names.length){el("statsList").textContent="Statistik skapas när spel avslutas.";return}
   names.sort(function(a,b){return stats[b].best-stats[a].best});
   el("statsList").innerHTML=names.map(function(name){var s=stats[name],avg=Math.round(s.total/s.games);
-    return '<div class="row"><b>'+name+'</b><span>'+s.games+' spel · snitt '+avg+'</span><span class="muted">rekord '+s.best+' · Yatzy '+s.yatzy+' · 600+ '+s.over600+'</span></div>'
+    return '<div class="row" style="align-items:center"><div><b>'+name+'</b><div class="muted">'+s.games+' spel · snitt '+avg+' · rekord '+s.best+' · Yatzy '+s.yatzy+' · 600+ '+s.over600+'</div></div><button type="button" class="danger delete-player-stats" data-name="'+encodeURIComponent(name)+'">Radera statistik</button></div>'
   }).join("");
+  document.querySelectorAll(".delete-player-stats").forEach(function(btn){
+    btn.addEventListener("click",function(){
+      var name=decodeURIComponent(btn.dataset.name||"");
+      if(!confirm('Radera all statistik för '+name+'? Personen tas bort ur tidigare sparade spel.'))return;
+      var history=safeGet(historyKey,[]).map(function(game){
+        game.players=(game.players||[]).filter(function(p){return p.name!==name});
+        return game;
+      }).filter(function(game){return (game.players||[]).length>0});
+      safeSet(historyKey,history);
+      rebuildStats();renderStats();renderHistory();
+    });
+  });
 }
 function renderHistory(){
   var history=safeGet(historyKey,[]);
   if(!history.length){el("historyList").textContent="Inga avslutade spel ännu.";return}
   el("historyList").innerHTML=history.map(function(game){
     var rows=(game.players||[]).slice().sort(function(a,b){return b.score-a.score}).map(function(p,i){return '<div class="row"><b>'+(i+1)+'. '+p.name+'</b><span>'+p.score+' p'+(p.yatzy?' · Yatzy!':'')+'</span></div>'}).join('');
-    return '<div class="history-game" style="border-bottom:1px solid var(--line);padding:10px 0"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><b>'+game.date+'</b><button type="button" class="danger delete-game" data-id="'+game.id+'">Radera</button></div>'+rows+'</div>'
+    return '<div class="history-game" style="border-bottom:1px solid var(--line);padding:10px 0"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><b>'+game.date+'</b><button type="button" class="danger delete-game" data-id="'+game.id+'">Radera spel</button></div>'+rows+'</div>'
   }).join('');
   document.querySelectorAll('.delete-game').forEach(function(btn){btn.addEventListener('click',function(){
     if(!confirm('Radera detta tidigare spel?'))return;
@@ -459,6 +481,15 @@ el("yatzySound").addEventListener("change",saveSettings);
 el("sixSound").addEventListener("change",saveSettings);
 el("testYatzy").addEventListener("click",function(){playChosen(el("yatzySound").value,"yatzy","spelaren")});
 el("test600").addEventListener("click",function(){playChosen(el("sixSound").value,"600","spelaren")});
+
+el("forceRefresh").addEventListener("click",function(){
+  try{
+    var u=new URL(location.href);
+    u.searchParams.set("v",Date.now());
+    location.replace(u.toString());
+  }catch(e){location.reload()}
+});
+
 el("clearHof").addEventListener("click",function(){if(confirm("Radera hela 600-klubben? Detta går inte att ångra.")){try{localStorage.removeItem(hofKey)}catch(e){}renderHof();alert("600-klubben är raderad.")}});
 el("clearStats").addEventListener("click",function(){if(confirm("Radera all statistik och alla tidigare spel? Detta går inte att ångra.")){try{localStorage.removeItem(statsKey);localStorage.removeItem(historyKey)}catch(e){}renderStats();renderHistory();alert("Statistik och tidigare spel är raderade.")}});
 
