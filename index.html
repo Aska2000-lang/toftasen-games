@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="Toftåsen Games">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>Toftåsen Games – Maxi‑Yatzy v12</title>
+<title>Toftåsen Games – Maxi‑Yatzy v13</title>
 <style>
 :root {
   --bg:#f5f1e8; --card:#fffdf8; --ink:#1d261c; --muted:#71766f;
@@ -130,7 +130,7 @@ body.view-ultra #scoreTables input[type=number]{width:31px!important;height:23px
 <body>
 <div class="app">
 <section class="card watermarked">
-  <h1>TOFTÅSEN GAMES <span style="display:inline-block;margin-left:8px;padding:3px 7px;border-radius:999px;background:#1d261c;color:#fff;font-size:11px;font-weight:800">v12</span></h1>
+  <h1>TOFTÅSEN GAMES <span style="display:inline-block;margin-left:8px;padding:3px 7px;border-radius:999px;background:#1d261c;color:#fff;font-size:11px;font-weight:800">v13</span></h1>
   <div class="sub">Maxi‑Yatzy</div>
   <div class="controls">
     <label>Datum<input class="field" id="date" type="date"></label>
@@ -160,7 +160,7 @@ body.view-ultra #scoreTables input[type=number]{width:31px!important;height:23px
     <button type="button" class="alt" id="ultraBtn">Extra kompakt</button>
     <label for="zoomRange">Storlek</label>
     <input id="zoomRange" type="range" min="70" max="115" step="5" value="100">
-    <span id="zoomValue">100%</span>
+    <span id="zoomValue">100%</span><span class="muted" style="font-size:12px">Tryck på knapp eller dra reglaget</span>
   </div>
 
   <div id="scoreTables">
@@ -312,11 +312,6 @@ function validateScoreInput(node){
   var max=parseInt(node.getAttribute("max"),10);
   if(isNaN(value)){node.value="";return false}
   if(value<0){node.value=0;showLimitMessage("Poängen kan inte vara lägre än 0.");return false}
-  if(/^l-13-\d+$/.test(node.id||"") && value!==0 && value!==100){
-    node.value="";
-    showLimitMessage("Maxi-Yatzy kan bara vara 0 eller 100 poäng.");
-    return false;
-  }
   if(!isNaN(max)&&value>max){
     node.value=max;
     var label=node.getAttribute("aria-label")||"Den här raden";
@@ -546,8 +541,11 @@ renderHistory();
 })();
 
 (function setupResponsiveScoreView(){
-  var score=el("scoreTables"),range=el("zoomRange"),value=el("zoomValue");
-  var compactBtn=el("compactBtn"),ultraBtn=el("ultraBtn");
+  var score=document.getElementById("scoreTables");
+  var range=document.getElementById("zoomRange");
+  var value=document.getElementById("zoomValue");
+  var compactBtn=document.getElementById("compactBtn");
+  var ultraBtn=document.getElementById("ultraBtn");
   if(!score||!range||!value||!compactBtn||!ultraBtn)return;
 
   var mode=localStorage.getItem("toftasen-view-mode")||"compact";
@@ -583,8 +581,9 @@ renderHistory();
     applyMode();
   });
 
-  range.addEventListener("input",function(){applyZoom(parseInt(range.value,10)||100)});
-  range.addEventListener("change",function(){applyZoom(parseInt(range.value,10)||100)});
+  range.addEventListener("input",function(){
+    applyZoom(parseInt(range.value,10)||100);
+  });
 
   var pinchStartDistance=0,pinchStartZoom=zoom;
   function distance(touches){
@@ -615,6 +614,9 @@ renderHistory();
 
 function resetIphoneOverview(){
   try{
+    var active=document.activeElement;
+    if(active&&active.blur)active.blur();
+
     var viewport=document.querySelector('meta[name="viewport"]');
     if(viewport){
       var original=viewport.getAttribute("content");
@@ -622,23 +624,28 @@ function resetIphoneOverview(){
       setTimeout(function(){
         viewport.setAttribute("content",original);
         window.scrollTo({top:Math.max(0,window.scrollY-1),behavior:"smooth"});
-      },120);
+      },160);
     }
   }catch(e){}
 }
+
 document.querySelectorAll('input[type="number"]').forEach(function(input){
-  input.addEventListener("change",function(){
-    input.blur();
-    setTimeout(resetIphoneOverview,80);
+  input.addEventListener("focus",function(){
+    if(input.value==="0"){
+      setTimeout(function(){try{input.select()}catch(e){}},30);
+    }
   });
+
+  input.addEventListener("change",function(){
+    setTimeout(resetIphoneOverview,100);
+  });
+
   input.addEventListener("keydown",function(e){
-    if(e.key==="Enter"||e.key==="Done"){
-      input.blur();
+    if(e.key==="Enter"){
       setTimeout(resetIphoneOverview,80);
     }
   });
 });
-
 </script>
 </body>
 </html>
