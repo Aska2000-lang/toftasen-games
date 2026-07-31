@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="Toftåsen Games">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>Toftåsen Games – Maxi‑Yatzy v12</title>
+<title>Toftåsen Games – Maxi‑Yatzy v15</title>
 <style>
 :root {
   --bg:#f5f1e8; --card:#fffdf8; --ink:#1d261c; --muted:#71766f;
@@ -125,12 +125,40 @@ body.view-ultra #scoreTables input[type=number]{width:31px!important;height:23px
   .scroll{overflow-x:auto}
 }
 
+
+/* v14 spelregler */
+.upper-low input{background:#f8d7da!important}
+.upper-target input{background:#b9e2bd!important}
+.upper-high input{background:#dff3df!important}
+.bonus-miss{background:#f5c2c7!important;color:#7a2028!important}
+.bonus-hit{background:#c9ebcd!important;color:#174c20!important}
+.hidden-total{color:transparent!important;position:relative}
+.hidden-total::after{content:"—";color:var(--ink);position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+body.game-finished .hidden-total{color:inherit!important}
+body.game-finished .hidden-total::after{display:none}
+.token-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.token-player{border:1px solid var(--line);border-radius:12px;padding:8px;text-align:center;background:#fffdf8}
+.token-count{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#b52c2c;color:white;font-weight:900;margin:4px}
+.token-actions{display:flex;gap:5px;justify-content:center}
+.token-actions button{padding:6px 9px}
+.dice-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.dice-switch input{display:none}
+.dice-switch span{display:block;width:54px;height:30px;border-radius:999px;background:#bbb;position:relative;transition:.2s}
+.dice-switch span::after{content:"";position:absolute;width:24px;height:24px;border-radius:50%;background:white;left:3px;top:3px;transition:.2s}
+.dice-switch input:checked+span{background:#30452d}
+.dice-switch input:checked+span::after{left:27px}
+.dice-row{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;margin:12px 0}
+.die{aspect-ratio:1;border:2px solid var(--line);border-radius:14px;background:white;font-size:30px;font-weight:900;display:flex;align-items:center;justify-content:center;padding:0}
+.die.held{background:#fff0b8;border-color:#a97a00;box-shadow:inset 0 0 0 3px #f0d56a}
+.dice-actions{display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:560px){.token-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.die{font-size:25px}}
+
 </style>
 </head>
 <body>
 <div class="app">
 <section class="card watermarked">
-  <h1>TOFTÅSEN GAMES <span style="display:inline-block;margin-left:8px;padding:3px 7px;border-radius:999px;background:#1d261c;color:#fff;font-size:11px;font-weight:800">v12</span></h1>
+  <h1>TOFTÅSEN GAMES <span style="display:inline-block;margin-left:8px;padding:3px 7px;border-radius:999px;background:#1d261c;color:#fff;font-size:11px;font-weight:800">v15</span></h1>
   <div class="sub">Maxi‑Yatzy</div>
   <div class="controls">
     <label>Datum<input class="field" id="date" type="date"></label>
@@ -152,15 +180,36 @@ body.view-ultra #scoreTables input[type=number]{width:31px!important;height:23px
 </div>
 
 <div id="view-game">
-  <section class="card watermarked"><h2>Spelare <span class="muted">Namn eller initial</span></h2><div class="names"><input class="player-name p0" id="name-0" placeholder="A" maxlength="14"><input class="player-name p1" id="name-1" placeholder="B" maxlength="14"><input class="player-name p2" id="name-2" placeholder="C" maxlength="14"><input class="player-name p3" id="name-3" placeholder="D" maxlength="14"><input class="player-name p4" id="name-4" placeholder="E" maxlength="14"><input class="player-name p5" id="name-5" placeholder="F" maxlength="14"><input class="player-name p6" id="name-6" placeholder="G" maxlength="14"><input class="player-name p7" id="name-7" placeholder="H" maxlength="14"></div></section>
+  <section class="card watermarked"><h2>Spelare <span class="muted">Namn eller initial</span></h2><div class="names"><input class="player-name p0" id="name-0" placeholder="A" maxlength="14"><input class="player-name p1" id="name-1" placeholder="B" maxlength="14"><input class="player-name p2" id="name-2" placeholder="C" maxlength="14"><input class="player-name p3" id="name-3" placeholder="D" maxlength="14"><input class="player-name p4" id="name-4" placeholder="E" maxlength="14"><input class="player-name p5" id="name-5" placeholder="F" maxlength="14"><input class="player-name p6" id="name-6" placeholder="G" maxlength="14"><input class="player-name p7" id="name-7" placeholder="H" maxlength="14"></div>
+</section>
 
+<section class="card watermarked" id="extraThrowsCard">
+  <h2>🔴 Extra slag <span class="muted">Röda markörer</span></h2>
+  <div class="token-grid" id="tokenGrid"></div>
+  <p class="muted" style="margin:6px 0 0">När en spelare väljer att stanna efter fyra lika får spelaren <b>två röda extraslag</b>. Tryck <b>Lägg till 2</b>. Tryck <b>Använd 1</b> varje gång ett extraslag används senare.</p>
+</section>
+
+<section class="card" id="diceCard">
+  <div class="dice-toggle-row">
+    <div><h2 style="margin:0">🎲 Virtuella tärningar</h2><span class="muted">Slå på – tärningarna visas direkt här under</span></div>
+    <label class="dice-switch"><input type="checkbox" id="diceToggle"><span></span></label>
+  </div>
+  <div id="dicePanel" class="hidden">
+    <div class="dice-row" id="diceRow"></div>
+    <div class="dice-actions">
+      <button type="button" id="rollDice">Slå tärningarna</button>
+      <button type="button" class="alt" id="clearHolds">Släpp alla</button>
+    </div>
+    <p class="muted" style="margin:6px 0 0"><b>Så gör du:</b> Tryck på “Slå tärningarna”. Tryck sedan på de tärningar du vill behålla – de blir gula. Tryck “Slå tärningarna” igen för att bara slå om de andra.</p>
+  </div>
+</section>
 
   <div class="view-tools">
     <button type="button" class="alt" id="compactBtn">Kompakt vy</button>
     <button type="button" class="alt" id="ultraBtn">Extra kompakt</button>
     <label for="zoomRange">Storlek</label>
     <input id="zoomRange" type="range" min="70" max="115" step="5" value="100">
-    <span id="zoomValue">100%</span>
+    <span id="zoomValue">100%</span><span class="muted" style="font-size:12px">Tryck på knapp eller dra reglaget</span>
   </div>
 
   <div id="scoreTables">
@@ -173,6 +222,7 @@ body.view-ultra #scoreTables input[type=number]{width:31px!important;height:23px
 <tr><td>Femmor</td><td class="player-col p0"><input type="number" inputmode="numeric" min="0" id="u-4-0" max="30" aria-label="Femmor, spelare 1"></td><td class="player-col p1"><input type="number" inputmode="numeric" min="0" id="u-4-1" max="30" aria-label="Femmor, spelare 2"></td><td class="player-col p2"><input type="number" inputmode="numeric" min="0" id="u-4-2" max="30" aria-label="Femmor, spelare 3"></td><td class="player-col p3"><input type="number" inputmode="numeric" min="0" id="u-4-3" max="30" aria-label="Femmor, spelare 4"></td><td class="player-col p4"><input type="number" inputmode="numeric" min="0" id="u-4-4" max="30" aria-label="Femmor, spelare 5"></td><td class="player-col p5"><input type="number" inputmode="numeric" min="0" id="u-4-5" max="30" aria-label="Femmor, spelare 6"></td><td class="player-col p6"><input type="number" inputmode="numeric" min="0" id="u-4-6" max="30" aria-label="Femmor, spelare 7"></td><td class="player-col p7"><input type="number" inputmode="numeric" min="0" id="u-4-7" max="30" aria-label="Femmor, spelare 8"></td></tr>
 <tr><td>Sexor</td><td class="player-col p0"><input type="number" inputmode="numeric" min="0" id="u-5-0" max="36" aria-label="Sexor, spelare 1"></td><td class="player-col p1"><input type="number" inputmode="numeric" min="0" id="u-5-1" max="36" aria-label="Sexor, spelare 2"></td><td class="player-col p2"><input type="number" inputmode="numeric" min="0" id="u-5-2" max="36" aria-label="Sexor, spelare 3"></td><td class="player-col p3"><input type="number" inputmode="numeric" min="0" id="u-5-3" max="36" aria-label="Sexor, spelare 4"></td><td class="player-col p4"><input type="number" inputmode="numeric" min="0" id="u-5-4" max="36" aria-label="Sexor, spelare 5"></td><td class="player-col p5"><input type="number" inputmode="numeric" min="0" id="u-5-5" max="36" aria-label="Sexor, spelare 6"></td><td class="player-col p6"><input type="number" inputmode="numeric" min="0" id="u-5-6" max="36" aria-label="Sexor, spelare 7"></td><td class="player-col p7"><input type="number" inputmode="numeric" min="0" id="u-5-7" max="36" aria-label="Sexor, spelare 8"></td></tr>
   <tr class="calc"><td>SUMMA</td><td class="player-col p0" id="usum-0">0</td><td class="player-col p1" id="usum-1">0</td><td class="player-col p2" id="usum-2">0</td><td class="player-col p3" id="usum-3">0</td><td class="player-col p4" id="usum-4">0</td><td class="player-col p5" id="usum-5">0</td><td class="player-col p6" id="usum-6">0</td><td class="player-col p7" id="usum-7">0</td></tr>
+  <tr class="calc bonus-delta-row"><td>TILL BONUS</td><td class="player-col p0 bonus-delta" id="bonusdelta-0">-84</td><td class="player-col p1 bonus-delta" id="bonusdelta-1">-84</td><td class="player-col p2 bonus-delta" id="bonusdelta-2">-84</td><td class="player-col p3 bonus-delta" id="bonusdelta-3">-84</td><td class="player-col p4 bonus-delta" id="bonusdelta-4">-84</td><td class="player-col p5 bonus-delta" id="bonusdelta-5">-84</td><td class="player-col p6 bonus-delta" id="bonusdelta-6">-84</td><td class="player-col p7 bonus-delta" id="bonusdelta-7">-84</td></tr>
   <tr class="calc"><td>BONUS</td><td class="player-col p0" id="bonus-0">0</td><td class="player-col p1" id="bonus-1">0</td><td class="player-col p2" id="bonus-2">0</td><td class="player-col p3" id="bonus-3">0</td><td class="player-col p4" id="bonus-4">0</td><td class="player-col p5" id="bonus-5">0</td><td class="player-col p6" id="bonus-6">0</td><td class="player-col p7" id="bonus-7">0</td></tr>
   <tr class="total"><td>ÖVRE TOTAL</td><td class="player-col p0" id="utotal-0">0</td><td class="player-col p1" id="utotal-1">0</td><td class="player-col p2" id="utotal-2">0</td><td class="player-col p3" id="utotal-3">0</td><td class="player-col p4" id="utotal-4">0</td><td class="player-col p5" id="utotal-5">0</td><td class="player-col p6" id="utotal-6">0</td><td class="player-col p7" id="utotal-7">0</td></tr>
   </tbody></table></div></section>
@@ -187,7 +237,7 @@ body.view-ultra #scoreTables input[type=number]{width:31px!important;height:23px
 <tr><td>Femtal</td><td class="player-col p0"><input type="number" inputmode="numeric" min="0" id="l-5-0" max="30" aria-label="Femtal, spelare 1"></td><td class="player-col p1"><input type="number" inputmode="numeric" min="0" id="l-5-1" max="30" aria-label="Femtal, spelare 2"></td><td class="player-col p2"><input type="number" inputmode="numeric" min="0" id="l-5-2" max="30" aria-label="Femtal, spelare 3"></td><td class="player-col p3"><input type="number" inputmode="numeric" min="0" id="l-5-3" max="30" aria-label="Femtal, spelare 4"></td><td class="player-col p4"><input type="number" inputmode="numeric" min="0" id="l-5-4" max="30" aria-label="Femtal, spelare 5"></td><td class="player-col p5"><input type="number" inputmode="numeric" min="0" id="l-5-5" max="30" aria-label="Femtal, spelare 6"></td><td class="player-col p6"><input type="number" inputmode="numeric" min="0" id="l-5-6" max="30" aria-label="Femtal, spelare 7"></td><td class="player-col p7"><input type="number" inputmode="numeric" min="0" id="l-5-7" max="30" aria-label="Femtal, spelare 8"></td></tr>
 <tr><td>Liten straight</td><td class="player-col p0"><input type="number" inputmode="numeric" min="0" id="l-6-0" max="15" aria-label="Liten straight, spelare 1"></td><td class="player-col p1"><input type="number" inputmode="numeric" min="0" id="l-6-1" max="15" aria-label="Liten straight, spelare 2"></td><td class="player-col p2"><input type="number" inputmode="numeric" min="0" id="l-6-2" max="15" aria-label="Liten straight, spelare 3"></td><td class="player-col p3"><input type="number" inputmode="numeric" min="0" id="l-6-3" max="15" aria-label="Liten straight, spelare 4"></td><td class="player-col p4"><input type="number" inputmode="numeric" min="0" id="l-6-4" max="15" aria-label="Liten straight, spelare 5"></td><td class="player-col p5"><input type="number" inputmode="numeric" min="0" id="l-6-5" max="15" aria-label="Liten straight, spelare 6"></td><td class="player-col p6"><input type="number" inputmode="numeric" min="0" id="l-6-6" max="15" aria-label="Liten straight, spelare 7"></td><td class="player-col p7"><input type="number" inputmode="numeric" min="0" id="l-6-7" max="15" aria-label="Liten straight, spelare 8"></td></tr>
 <tr><td>Stor straight</td><td class="player-col p0"><input type="number" inputmode="numeric" min="0" id="l-7-0" max="20" aria-label="Stor straight, spelare 1"></td><td class="player-col p1"><input type="number" inputmode="numeric" min="0" id="l-7-1" max="20" aria-label="Stor straight, spelare 2"></td><td class="player-col p2"><input type="number" inputmode="numeric" min="0" id="l-7-2" max="20" aria-label="Stor straight, spelare 3"></td><td class="player-col p3"><input type="number" inputmode="numeric" min="0" id="l-7-3" max="20" aria-label="Stor straight, spelare 4"></td><td class="player-col p4"><input type="number" inputmode="numeric" min="0" id="l-7-4" max="20" aria-label="Stor straight, spelare 5"></td><td class="player-col p5"><input type="number" inputmode="numeric" min="0" id="l-7-5" max="20" aria-label="Stor straight, spelare 6"></td><td class="player-col p6"><input type="number" inputmode="numeric" min="0" id="l-7-6" max="20" aria-label="Stor straight, spelare 7"></td><td class="player-col p7"><input type="number" inputmode="numeric" min="0" id="l-7-7" max="20" aria-label="Stor straight, spelare 8"></td></tr>
-<tr><td>Full straight</td><td class="player-col p0"><input type="number" inputmode="numeric" min="0" id="l-8-0" max="21" aria-label="Full straight, spelare 1"></td><td class="player-col p1"><input type="number" inputmode="numeric" min="0" id="l-8-1" max="21" aria-label="Full straight, spelare 2"></td><td class="player-col p2"><input type="number" inputmode="numeric" min="0" id="l-8-2" max="21" aria-label="Full straight, spelare 3"></td><td class="player-col p3"><input type="number" inputmode="numeric" min="0" id="l-8-3" max="21" aria-label="Full straight, spelare 4"></td><td class="player-col p4"><input type="number" inputmode="numeric" min="0" id="l-8-4" max="21" aria-label="Full straight, spelare 5"></td><td class="player-col p5"><input type="number" inputmode="numeric" min="0" id="l-8-5" max="21" aria-label="Full straight, spelare 6"></td><td class="player-col p6"><input type="number" inputmode="numeric" min="0" id="l-8-6" max="21" aria-label="Full straight, spelare 7"></td><td class="player-col p7"><input type="number" inputmode="numeric" min="0" id="l-8-7" max="21" aria-label="Full straight, spelare 8"></td></tr>
+<tr><td>Full straight</td><td class="player-col p0"><input type="number" inputmode="numeric" min="0" id="l-8-0" max="25" aria-label="Full straight, spelare 1"></td><td class="player-col p1"><input type="number" inputmode="numeric" min="0" id="l-8-1" max="25" aria-label="Full straight, spelare 2"></td><td class="player-col p2"><input type="number" inputmode="numeric" min="0" id="l-8-2" max="25" aria-label="Full straight, spelare 3"></td><td class="player-col p3"><input type="number" inputmode="numeric" min="0" id="l-8-3" max="25" aria-label="Full straight, spelare 4"></td><td class="player-col p4"><input type="number" inputmode="numeric" min="0" id="l-8-4" max="25" aria-label="Full straight, spelare 5"></td><td class="player-col p5"><input type="number" inputmode="numeric" min="0" id="l-8-5" max="25" aria-label="Full straight, spelare 6"></td><td class="player-col p6"><input type="number" inputmode="numeric" min="0" id="l-8-6" max="25" aria-label="Full straight, spelare 7"></td><td class="player-col p7"><input type="number" inputmode="numeric" min="0" id="l-8-7" max="25" aria-label="Full straight, spelare 8"></td></tr>
 <tr><td>Kåk</td><td class="player-col p0"><input type="number" inputmode="numeric" min="0" id="l-9-0" max="28" aria-label="Kåk, spelare 1"></td><td class="player-col p1"><input type="number" inputmode="numeric" min="0" id="l-9-1" max="28" aria-label="Kåk, spelare 2"></td><td class="player-col p2"><input type="number" inputmode="numeric" min="0" id="l-9-2" max="28" aria-label="Kåk, spelare 3"></td><td class="player-col p3"><input type="number" inputmode="numeric" min="0" id="l-9-3" max="28" aria-label="Kåk, spelare 4"></td><td class="player-col p4"><input type="number" inputmode="numeric" min="0" id="l-9-4" max="28" aria-label="Kåk, spelare 5"></td><td class="player-col p5"><input type="number" inputmode="numeric" min="0" id="l-9-5" max="28" aria-label="Kåk, spelare 6"></td><td class="player-col p6"><input type="number" inputmode="numeric" min="0" id="l-9-6" max="28" aria-label="Kåk, spelare 7"></td><td class="player-col p7"><input type="number" inputmode="numeric" min="0" id="l-9-7" max="28" aria-label="Kåk, spelare 8"></td></tr>
 <tr><td>Hus</td><td class="player-col p0"><input type="number" inputmode="numeric" min="0" id="l-10-0" max="33" aria-label="Hus, spelare 1"></td><td class="player-col p1"><input type="number" inputmode="numeric" min="0" id="l-10-1" max="33" aria-label="Hus, spelare 2"></td><td class="player-col p2"><input type="number" inputmode="numeric" min="0" id="l-10-2" max="33" aria-label="Hus, spelare 3"></td><td class="player-col p3"><input type="number" inputmode="numeric" min="0" id="l-10-3" max="33" aria-label="Hus, spelare 4"></td><td class="player-col p4"><input type="number" inputmode="numeric" min="0" id="l-10-4" max="33" aria-label="Hus, spelare 5"></td><td class="player-col p5"><input type="number" inputmode="numeric" min="0" id="l-10-5" max="33" aria-label="Hus, spelare 6"></td><td class="player-col p6"><input type="number" inputmode="numeric" min="0" id="l-10-6" max="33" aria-label="Hus, spelare 7"></td><td class="player-col p7"><input type="number" inputmode="numeric" min="0" id="l-10-7" max="33" aria-label="Hus, spelare 8"></td></tr>
 <tr><td>Torn</td><td class="player-col p0"><input type="number" inputmode="numeric" min="0" id="l-11-0" max="34" aria-label="Torn, spelare 1"></td><td class="player-col p1"><input type="number" inputmode="numeric" min="0" id="l-11-1" max="34" aria-label="Torn, spelare 2"></td><td class="player-col p2"><input type="number" inputmode="numeric" min="0" id="l-11-2" max="34" aria-label="Torn, spelare 3"></td><td class="player-col p3"><input type="number" inputmode="numeric" min="0" id="l-11-3" max="34" aria-label="Torn, spelare 4"></td><td class="player-col p4"><input type="number" inputmode="numeric" min="0" id="l-11-4" max="34" aria-label="Torn, spelare 5"></td><td class="player-col p5"><input type="number" inputmode="numeric" min="0" id="l-11-5" max="34" aria-label="Torn, spelare 6"></td><td class="player-col p6"><input type="number" inputmode="numeric" min="0" id="l-11-6" max="34" aria-label="Torn, spelare 7"></td><td class="player-col p7"><input type="number" inputmode="numeric" min="0" id="l-11-7" max="34" aria-label="Torn, spelare 8"></td></tr>
@@ -312,11 +362,6 @@ function validateScoreInput(node){
   var max=parseInt(node.getAttribute("max"),10);
   if(isNaN(value)){node.value="";return false}
   if(value<0){node.value=0;showLimitMessage("Poängen kan inte vara lägre än 0.");return false}
-  if(/^l-13-\d+$/.test(node.id||"") && value!==0 && value!==100){
-    node.value="";
-    showLimitMessage("Maxi-Yatzy kan bara vara 0 eller 100 poäng.");
-    return false;
-  }
   if(!isNaN(max)&&value>max){
     node.value=max;
     var label=node.getAttribute("aria-label")||"Den här raden";
@@ -499,7 +544,7 @@ document.querySelectorAll(".player-name").forEach(function(x){x.addEventListener
 el("count").addEventListener("change",function(){showPlayers();save()});
 el("date").addEventListener("change",save);
 el("save").addEventListener("click",function(){save();alert("Spelet är sparat på denna enhet.")});
-el("finish").addEventListener("click",finishGame);
+el("finish").addEventListener("click",function(){gameFinished=true;document.body.classList.add("game-finished");calculate();finishGame();});
 el("reset").addEventListener("click",function(){if(confirm("Radera pågående spel och börja om?")){try{localStorage.removeItem(stateKey)}catch(e){}location.reload()}});
 el("close600").addEventListener("click",function(){el("overlay").style.display="none"});
 el("closeYatzy").addEventListener("click",function(){el("yatzyOverlay").style.display="none"});
@@ -534,6 +579,127 @@ document.addEventListener("change",function(e){
   else if(e.target && e.target.id==="date"){save();}
 });
 
+var gameFinished=false;
+var adminPassword="3636";
+var tokenKey="toftasen-extra-throws-v1";
+var diceKey="toftasen-dice-enabled-v1";
+
+function requireAdmin(){
+  return prompt("Ange lösenord för att ändra statistik eller radera spel:")==adminPassword;
+}
+
+function renderTokens(){
+  var counts=safeGet(tokenKey,[]);
+  while(counts.length<8)counts.push(0);
+  var html="";
+  for(var i=0;i<playerCount;i++){
+    html+='<div class="token-player p'+i+'"><b>'+pname(i)+'</b><div class="muted">Extraslag kvar</div><div><span class="token-count">'+counts[i]+'</span></div><div class="token-actions"><button type="button" class="token-minus alt" data-i="'+i+'">Använd 1</button><button type="button" class="token-plus" data-i="'+i+'">Lägg till 2</button></div></div>';
+  }
+  el("tokenGrid").innerHTML=html;
+  document.querySelectorAll(".token-plus").forEach(function(b){b.addEventListener("click",function(){
+    var n=parseInt(b.dataset.i,10);counts[n]=(counts[n]||0)+2;safeSet(tokenKey,counts);renderTokens();
+  })});
+  document.querySelectorAll(".token-minus").forEach(function(b){b.addEventListener("click",function(){
+    var n=parseInt(b.dataset.i,10);counts[n]=Math.max(0,(counts[n]||0)-1);safeSet(tokenKey,counts);renderTokens();
+  })});
+}
+
+function updateUpperColors(player,row,value){
+  var input=el("u-"+row+"-"+player);
+  if(!input)return;
+  var cell=input.parentElement,target=(row+1)*4;
+  cell.classList.remove("upper-low","upper-target","upper-high");
+  if(input.value===""){cell.classList.add("upper-low");return}
+  if(value<target)cell.classList.add("upper-low");
+  else if(value===target)cell.classList.add("upper-target");
+  else cell.classList.add("upper-high");
+}
+
+function calculate(){
+  var totals=[];
+  for(var i=0;i<playerCount;i++){
+    var us=0,lt=0;
+    for(var r=0;r<upperCount;r++){var uv=number("u-"+r+"-"+i);us+=uv;updateUpperColors(i,r,uv)}
+    for(var q=0;q<lowerCount;q++)lt+=number("l-"+q+"-"+i);
+    var bonus=us>=84?100:0,ut=us+bonus,grand=ut+lt;
+    el("usum-"+i).textContent=us;
+    el("bonusdelta-"+i).textContent=(us>=84?"+":"")+(us-84);
+    el("bonus-"+i).textContent=bonus;
+    el("bonus-"+i).classList.toggle("bonus-hit",us>=84);
+    el("bonus-"+i).classList.toggle("bonus-miss",us<84);
+    el("utotal-"+i).textContent=ut;
+    el("ltotal-"+i).textContent=gameFinished?lt:"";
+    el("grand-"+i).textContent=gameFinished?grand:"";
+    el("ltotal-"+i).classList.toggle("hidden-total",!gameFinished);
+    el("grand-"+i).classList.toggle("hidden-total",!gameFinished);
+    totals.push({i:i,score:grand});
+    var yatzyVal=number("l-"+(lowerCount-1)+"-"+i);
+    if(yatzyVal>=100&&!celebratedYatzy[i]){celebratedYatzy[i]=true;showYatzy(i)}
+    if(gameFinished&&grand>=600&&!celebrated600[i]){celebrated600[i]=true;show600(i,grand)}
+  }
+  updateHeaders();renderPodium(totals);renderTokens();
+}
+
+function renderPodium(totals){
+  totals=totals.filter(function(x){return x.score>0}).sort(function(a,b){return b.score-a.score}).slice(0,3);
+  var box=el("podium");
+  if(!totals.length){box.style.display="none";return}
+  var classes=["gold","silver","bronze"],medals=["🥇","🥈","🥉"];
+  box.style.display="grid";
+  box.innerHTML=totals.map(function(x,k){
+    return '<div class="podium-item '+classes[k]+'">'+medals[k]+' '+pname(x.i)+(gameFinished?'<br><span class="muted">'+x.score+' poäng</span>':'')+'</div>';
+  }).join("");
+}
+
+
+
+function buildDice(){
+  var values=[1,2,3,4,5,6],held=[false,false,false,false,false,false];
+  var chars=["⚀","⚁","⚂","⚃","⚄","⚅"];
+  function draw(){
+    el("diceRow").innerHTML=values.map(function(v,i){return '<button type="button" class="die '+(held[i]?"held":"")+'" data-i="'+i+'">'+chars[v-1]+'</button>'}).join("");
+    document.querySelectorAll(".die").forEach(function(d){d.addEventListener("click",function(){var i=parseInt(d.dataset.i,10);held[i]=!held[i];draw()})});
+  }
+  el("rollDice").addEventListener("click",function(){
+    for(var i=0;i<6;i++)if(!held[i])values[i]=1+Math.floor(Math.random()*6);
+    draw();
+  });
+  el("clearHolds").addEventListener("click",function(){held=[false,false,false,false,false,false];draw()});
+  draw();
+}
+buildDice();
+var diceEnabled=safeGet(diceKey,false);
+el("diceToggle").checked=!!diceEnabled;
+el("dicePanel").classList.toggle("hidden",!diceEnabled);
+el("diceToggle").addEventListener("change",function(){diceEnabled=el("diceToggle").checked;safeSet(diceKey,diceEnabled);el("dicePanel").classList.toggle("hidden",!diceEnabled)});
+
+
+document.addEventListener("click",function(e){
+  var deleteGame=e.target.closest&&e.target.closest(".delete-game");
+  var deleteStats=e.target.closest&&e.target.closest(".delete-player-stats");
+  if(deleteGame||deleteStats){
+    if(!requireAdmin()){
+      e.preventDefault();e.stopImmediatePropagation();alert("Fel lösenord.");
+    }
+  }
+},true);
+
+el("clearHof").onclick=function(){
+  if(!requireAdmin())return alert("Fel lösenord.");
+  if(confirm("Radera hela 600-klubben?")){localStorage.removeItem(hofKey);renderHof()}
+};
+el("clearStats").onclick=function(){
+  if(!requireAdmin())return alert("Fel lösenord.");
+  if(confirm("Radera all statistik och alla tidigare spel?")){localStorage.removeItem(statsKey);localStorage.removeItem(historyKey);renderStats();renderHistory()}
+};
+
+document.querySelectorAll(".player-name").forEach(function(x){x.addEventListener("input",renderTokens)});
+el("count").addEventListener("change",renderTokens);
+document.body.classList.remove("game-finished");
+renderTokens();
+calculate();
+
+
 el("date").valueAsDate=new Date();
 loadSettings();
 showPlayers();
@@ -546,8 +712,11 @@ renderHistory();
 })();
 
 (function setupResponsiveScoreView(){
-  var score=el("scoreTables"),range=el("zoomRange"),value=el("zoomValue");
-  var compactBtn=el("compactBtn"),ultraBtn=el("ultraBtn");
+  var score=document.getElementById("scoreTables");
+  var range=document.getElementById("zoomRange");
+  var value=document.getElementById("zoomValue");
+  var compactBtn=document.getElementById("compactBtn");
+  var ultraBtn=document.getElementById("ultraBtn");
   if(!score||!range||!value||!compactBtn||!ultraBtn)return;
 
   var mode=localStorage.getItem("toftasen-view-mode")||"compact";
@@ -583,8 +752,9 @@ renderHistory();
     applyMode();
   });
 
-  range.addEventListener("input",function(){applyZoom(parseInt(range.value,10)||100)});
-  range.addEventListener("change",function(){applyZoom(parseInt(range.value,10)||100)});
+  range.addEventListener("input",function(){
+    applyZoom(parseInt(range.value,10)||100);
+  });
 
   var pinchStartDistance=0,pinchStartZoom=zoom;
   function distance(touches){
@@ -615,6 +785,9 @@ renderHistory();
 
 function resetIphoneOverview(){
   try{
+    var active=document.activeElement;
+    if(active&&active.blur)active.blur();
+
     var viewport=document.querySelector('meta[name="viewport"]');
     if(viewport){
       var original=viewport.getAttribute("content");
@@ -622,22 +795,29 @@ function resetIphoneOverview(){
       setTimeout(function(){
         viewport.setAttribute("content",original);
         window.scrollTo({top:Math.max(0,window.scrollY-1),behavior:"smooth"});
-      },120);
+      },160);
     }
   }catch(e){}
 }
+
 document.querySelectorAll('input[type="number"]').forEach(function(input){
-  input.addEventListener("change",function(){
-    input.blur();
-    setTimeout(resetIphoneOverview,80);
+  input.addEventListener("focus",function(){
+    if(input.value==="0"){
+      setTimeout(function(){try{input.select()}catch(e){}},30);
+    }
   });
+
+  input.addEventListener("change",function(){
+    setTimeout(resetIphoneOverview,100);
+  });
+
   input.addEventListener("keydown",function(e){
-    if(e.key==="Enter"||e.key==="Done"){
-      input.blur();
+    if(e.key==="Enter"){
       setTimeout(resetIphoneOverview,80);
     }
   });
 });
+
 
 </script>
 </body>
