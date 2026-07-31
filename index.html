@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="Toftåsen Games">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>Toftåsen Games – Maxi‑Yatzy v14</title>
+<title>Toftåsen Games – Maxi‑Yatzy v15</title>
 <style>
 :root {
   --bg:#f5f1e8; --card:#fffdf8; --ink:#1d261c; --muted:#71766f;
@@ -158,7 +158,7 @@ body.game-finished .hidden-total::after{display:none}
 <body>
 <div class="app">
 <section class="card watermarked">
-  <h1>TOFTÅSEN GAMES <span style="display:inline-block;margin-left:8px;padding:3px 7px;border-radius:999px;background:#1d261c;color:#fff;font-size:11px;font-weight:800">v14</span></h1>
+  <h1>TOFTÅSEN GAMES <span style="display:inline-block;margin-left:8px;padding:3px 7px;border-radius:999px;background:#1d261c;color:#fff;font-size:11px;font-weight:800">v15</span></h1>
   <div class="sub">Maxi‑Yatzy</div>
   <div class="controls">
     <label>Datum<input class="field" id="date" type="date"></label>
@@ -186,12 +186,12 @@ body.game-finished .hidden-total::after{display:none}
 <section class="card watermarked" id="extraThrowsCard">
   <h2>🔴 Extra slag <span class="muted">Röda markörer</span></h2>
   <div class="token-grid" id="tokenGrid"></div>
-  <p class="muted" style="margin:6px 0 0">När någon sparar fyra lika på ett slag: tryck <b>+2</b>. När ett extraslag används: tryck <b>−1</b>.</p>
+  <p class="muted" style="margin:6px 0 0">När en spelare väljer att stanna efter fyra lika får spelaren <b>två röda extraslag</b>. Tryck <b>Lägg till 2</b>. Tryck <b>Använd 1</b> varje gång ett extraslag används senare.</p>
 </section>
 
 <section class="card" id="diceCard">
   <div class="dice-toggle-row">
-    <div><h2 style="margin:0">🎲 Virtuella tärningar</h2><span class="muted">Kan slås av och på</span></div>
+    <div><h2 style="margin:0">🎲 Virtuella tärningar</h2><span class="muted">Slå på – tärningarna visas direkt här under</span></div>
     <label class="dice-switch"><input type="checkbox" id="diceToggle"><span></span></label>
   </div>
   <div id="dicePanel" class="hidden">
@@ -200,7 +200,7 @@ body.game-finished .hidden-total::after{display:none}
       <button type="button" id="rollDice">Slå tärningarna</button>
       <button type="button" class="alt" id="clearHolds">Släpp alla</button>
     </div>
-    <p class="muted" style="margin:6px 0 0">Tryck på en tärning för att spara den inför nästa slag.</p>
+    <p class="muted" style="margin:6px 0 0"><b>Så gör du:</b> Tryck på “Slå tärningarna”. Tryck sedan på de tärningar du vill behålla – de blir gula. Tryck “Slå tärningarna” igen för att bara slå om de andra.</p>
   </div>
 </section>
 
@@ -544,7 +544,7 @@ document.querySelectorAll(".player-name").forEach(function(x){x.addEventListener
 el("count").addEventListener("change",function(){showPlayers();save()});
 el("date").addEventListener("change",save);
 el("save").addEventListener("click",function(){save();alert("Spelet är sparat på denna enhet.")});
-el("finish").addEventListener("click",finishGame);
+el("finish").addEventListener("click",function(){gameFinished=true;document.body.classList.add("game-finished");calculate();finishGame();});
 el("reset").addEventListener("click",function(){if(confirm("Radera pågående spel och börja om?")){try{localStorage.removeItem(stateKey)}catch(e){}location.reload()}});
 el("close600").addEventListener("click",function(){el("overlay").style.display="none"});
 el("closeYatzy").addEventListener("click",function(){el("yatzyOverlay").style.display="none"});
@@ -578,6 +578,127 @@ document.addEventListener("change",function(e){
   if(e.target && e.target.id==="count"){showPlayers();save();}
   else if(e.target && e.target.id==="date"){save();}
 });
+
+var gameFinished=false;
+var adminPassword="3636";
+var tokenKey="toftasen-extra-throws-v1";
+var diceKey="toftasen-dice-enabled-v1";
+
+function requireAdmin(){
+  return prompt("Ange lösenord för att ändra statistik eller radera spel:")==adminPassword;
+}
+
+function renderTokens(){
+  var counts=safeGet(tokenKey,[]);
+  while(counts.length<8)counts.push(0);
+  var html="";
+  for(var i=0;i<playerCount;i++){
+    html+='<div class="token-player p'+i+'"><b>'+pname(i)+'</b><div class="muted">Extraslag kvar</div><div><span class="token-count">'+counts[i]+'</span></div><div class="token-actions"><button type="button" class="token-minus alt" data-i="'+i+'">Använd 1</button><button type="button" class="token-plus" data-i="'+i+'">Lägg till 2</button></div></div>';
+  }
+  el("tokenGrid").innerHTML=html;
+  document.querySelectorAll(".token-plus").forEach(function(b){b.addEventListener("click",function(){
+    var n=parseInt(b.dataset.i,10);counts[n]=(counts[n]||0)+2;safeSet(tokenKey,counts);renderTokens();
+  })});
+  document.querySelectorAll(".token-minus").forEach(function(b){b.addEventListener("click",function(){
+    var n=parseInt(b.dataset.i,10);counts[n]=Math.max(0,(counts[n]||0)-1);safeSet(tokenKey,counts);renderTokens();
+  })});
+}
+
+function updateUpperColors(player,row,value){
+  var input=el("u-"+row+"-"+player);
+  if(!input)return;
+  var cell=input.parentElement,target=(row+1)*4;
+  cell.classList.remove("upper-low","upper-target","upper-high");
+  if(input.value===""){cell.classList.add("upper-low");return}
+  if(value<target)cell.classList.add("upper-low");
+  else if(value===target)cell.classList.add("upper-target");
+  else cell.classList.add("upper-high");
+}
+
+function calculate(){
+  var totals=[];
+  for(var i=0;i<playerCount;i++){
+    var us=0,lt=0;
+    for(var r=0;r<upperCount;r++){var uv=number("u-"+r+"-"+i);us+=uv;updateUpperColors(i,r,uv)}
+    for(var q=0;q<lowerCount;q++)lt+=number("l-"+q+"-"+i);
+    var bonus=us>=84?100:0,ut=us+bonus,grand=ut+lt;
+    el("usum-"+i).textContent=us;
+    el("bonusdelta-"+i).textContent=(us>=84?"+":"")+(us-84);
+    el("bonus-"+i).textContent=bonus;
+    el("bonus-"+i).classList.toggle("bonus-hit",us>=84);
+    el("bonus-"+i).classList.toggle("bonus-miss",us<84);
+    el("utotal-"+i).textContent=ut;
+    el("ltotal-"+i).textContent=gameFinished?lt:"";
+    el("grand-"+i).textContent=gameFinished?grand:"";
+    el("ltotal-"+i).classList.toggle("hidden-total",!gameFinished);
+    el("grand-"+i).classList.toggle("hidden-total",!gameFinished);
+    totals.push({i:i,score:grand});
+    var yatzyVal=number("l-"+(lowerCount-1)+"-"+i);
+    if(yatzyVal>=100&&!celebratedYatzy[i]){celebratedYatzy[i]=true;showYatzy(i)}
+    if(gameFinished&&grand>=600&&!celebrated600[i]){celebrated600[i]=true;show600(i,grand)}
+  }
+  updateHeaders();renderPodium(totals);renderTokens();
+}
+
+function renderPodium(totals){
+  totals=totals.filter(function(x){return x.score>0}).sort(function(a,b){return b.score-a.score}).slice(0,3);
+  var box=el("podium");
+  if(!totals.length){box.style.display="none";return}
+  var classes=["gold","silver","bronze"],medals=["🥇","🥈","🥉"];
+  box.style.display="grid";
+  box.innerHTML=totals.map(function(x,k){
+    return '<div class="podium-item '+classes[k]+'">'+medals[k]+' '+pname(x.i)+(gameFinished?'<br><span class="muted">'+x.score+' poäng</span>':'')+'</div>';
+  }).join("");
+}
+
+
+
+function buildDice(){
+  var values=[1,2,3,4,5,6],held=[false,false,false,false,false,false];
+  var chars=["⚀","⚁","⚂","⚃","⚄","⚅"];
+  function draw(){
+    el("diceRow").innerHTML=values.map(function(v,i){return '<button type="button" class="die '+(held[i]?"held":"")+'" data-i="'+i+'">'+chars[v-1]+'</button>'}).join("");
+    document.querySelectorAll(".die").forEach(function(d){d.addEventListener("click",function(){var i=parseInt(d.dataset.i,10);held[i]=!held[i];draw()})});
+  }
+  el("rollDice").addEventListener("click",function(){
+    for(var i=0;i<6;i++)if(!held[i])values[i]=1+Math.floor(Math.random()*6);
+    draw();
+  });
+  el("clearHolds").addEventListener("click",function(){held=[false,false,false,false,false,false];draw()});
+  draw();
+}
+buildDice();
+var diceEnabled=safeGet(diceKey,false);
+el("diceToggle").checked=!!diceEnabled;
+el("dicePanel").classList.toggle("hidden",!diceEnabled);
+el("diceToggle").addEventListener("change",function(){diceEnabled=el("diceToggle").checked;safeSet(diceKey,diceEnabled);el("dicePanel").classList.toggle("hidden",!diceEnabled)});
+
+
+document.addEventListener("click",function(e){
+  var deleteGame=e.target.closest&&e.target.closest(".delete-game");
+  var deleteStats=e.target.closest&&e.target.closest(".delete-player-stats");
+  if(deleteGame||deleteStats){
+    if(!requireAdmin()){
+      e.preventDefault();e.stopImmediatePropagation();alert("Fel lösenord.");
+    }
+  }
+},true);
+
+el("clearHof").onclick=function(){
+  if(!requireAdmin())return alert("Fel lösenord.");
+  if(confirm("Radera hela 600-klubben?")){localStorage.removeItem(hofKey);renderHof()}
+};
+el("clearStats").onclick=function(){
+  if(!requireAdmin())return alert("Fel lösenord.");
+  if(confirm("Radera all statistik och alla tidigare spel?")){localStorage.removeItem(statsKey);localStorage.removeItem(historyKey);renderStats();renderHistory()}
+};
+
+document.querySelectorAll(".player-name").forEach(function(x){x.addEventListener("input",renderTokens)});
+el("count").addEventListener("change",renderTokens);
+document.body.classList.remove("game-finished");
+renderTokens();
+calculate();
+
 
 el("date").valueAsDate=new Date();
 loadSettings();
@@ -697,151 +818,6 @@ document.querySelectorAll('input[type="number"]').forEach(function(input){
   });
 });
 
-var gameFinished=false;
-var adminPassword="3636";
-var tokenKey="toftasen-extra-throws-v1";
-var diceKey="toftasen-dice-enabled-v1";
-
-function requireAdmin(){
-  return prompt("Ange lösenord för att ändra statistik eller radera spel:")==adminPassword;
-}
-
-function renderTokens(){
-  var counts=safeGet(tokenKey,[]);
-  while(counts.length<8)counts.push(0);
-  var html="";
-  for(var i=0;i<playerCount;i++){
-    html+='<div class="token-player p'+i+'"><b>'+pname(i)+'</b><div><span class="token-count">'+counts[i]+'</span></div><div class="token-actions"><button type="button" class="token-minus alt" data-i="'+i+'">−1</button><button type="button" class="token-plus" data-i="'+i+'">+2</button></div></div>';
-  }
-  el("tokenGrid").innerHTML=html;
-  document.querySelectorAll(".token-plus").forEach(function(b){b.addEventListener("click",function(){
-    var n=parseInt(b.dataset.i,10);counts[n]=(counts[n]||0)+2;safeSet(tokenKey,counts);renderTokens();
-  })});
-  document.querySelectorAll(".token-minus").forEach(function(b){b.addEventListener("click",function(){
-    var n=parseInt(b.dataset.i,10);counts[n]=Math.max(0,(counts[n]||0)-1);safeSet(tokenKey,counts);renderTokens();
-  })});
-}
-
-function updateUpperColors(player,row,value){
-  var input=el("u-"+row+"-"+player);
-  if(!input)return;
-  var cell=input.parentElement,target=(row+1)*4;
-  cell.classList.remove("upper-low","upper-target","upper-high");
-  if(input.value===""){cell.classList.add("upper-low");return}
-  if(value<target)cell.classList.add("upper-low");
-  else if(value===target)cell.classList.add("upper-target");
-  else cell.classList.add("upper-high");
-}
-
-function calculate(){
-  var totals=[];
-  for(var i=0;i<playerCount;i++){
-    var us=0,lt=0;
-    for(var r=0;r<upperCount;r++){var uv=number("u-"+r+"-"+i);us+=uv;updateUpperColors(i,r,uv)}
-    for(var q=0;q<lowerCount;q++)lt+=number("l-"+q+"-"+i);
-    var bonus=us>=84?100:0,ut=us+bonus,grand=ut+lt;
-    el("usum-"+i).textContent=us;
-    el("bonusdelta-"+i).textContent=(us>=84?"+":"")+(us-84);
-    el("bonus-"+i).textContent=bonus;
-    el("bonus-"+i).classList.toggle("bonus-hit",us>=84);
-    el("bonus-"+i).classList.toggle("bonus-miss",us<84);
-    el("utotal-"+i).textContent=ut;
-    el("ltotal-"+i).textContent=gameFinished?lt:"";
-    el("grand-"+i).textContent=gameFinished?grand:"";
-    el("ltotal-"+i).classList.toggle("hidden-total",!gameFinished);
-    el("grand-"+i).classList.toggle("hidden-total",!gameFinished);
-    totals.push({i:i,score:grand});
-    var yatzyVal=number("l-"+(lowerCount-1)+"-"+i);
-    if(yatzyVal>=100&&!celebratedYatzy[i]){celebratedYatzy[i]=true;showYatzy(i)}
-    if(gameFinished&&grand>=600&&!celebrated600[i]){celebrated600[i]=true;show600(i,grand)}
-  }
-  updateHeaders();renderPodium(totals);renderTokens();
-}
-
-function renderPodium(totals){
-  totals=totals.filter(function(x){return x.score>0}).sort(function(a,b){return b.score-a.score}).slice(0,3);
-  var box=el("podium");
-  if(!totals.length){box.style.display="none";return}
-  var classes=["gold","silver","bronze"],medals=["🥇","🥈","🥉"];
-  box.style.display="grid";
-  box.innerHTML=totals.map(function(x,k){
-    return '<div class="podium-item '+classes[k]+'">'+medals[k]+' '+pname(x.i)+(gameFinished?'<br><span class="muted">'+x.score+' poäng</span>':'')+'</div>';
-  }).join("");
-}
-
-var originalFinishGame=finishGame;
-finishGame=function(){
-  gameFinished=true;
-  document.body.classList.add("game-finished");
-  calculate();
-  originalFinishGame();
-};
-
-function buildDice(){
-  var values=[1,2,3,4,5,6],held=[false,false,false,false,false,false];
-  var chars=["⚀","⚁","⚂","⚃","⚄","⚅"];
-  function draw(){
-    el("diceRow").innerHTML=values.map(function(v,i){return '<button type="button" class="die '+(held[i]?"held":"")+'" data-i="'+i+'">'+chars[v-1]+'</button>'}).join("");
-    document.querySelectorAll(".die").forEach(function(d){d.addEventListener("click",function(){var i=parseInt(d.dataset.i,10);held[i]=!held[i];draw()})});
-  }
-  el("rollDice").addEventListener("click",function(){
-    for(var i=0;i<6;i++)if(!held[i])values[i]=1+Math.floor(Math.random()*6);
-    draw();
-  });
-  el("clearHolds").addEventListener("click",function(){held=[false,false,false,false,false,false];draw()});
-  draw();
-}
-buildDice();
-var diceEnabled=safeGet(diceKey,false);
-el("diceToggle").checked=!!diceEnabled;
-el("dicePanel").classList.toggle("hidden",!diceEnabled);
-el("diceToggle").addEventListener("change",function(){diceEnabled=el("diceToggle").checked;safeSet(diceKey,diceEnabled);el("dicePanel").classList.toggle("hidden",!diceEnabled)});
-
-var oldRenderHistory=renderHistory;
-renderHistory=function(){
-  oldRenderHistory();
-  document.querySelectorAll(".delete-game").forEach(function(btn){
-    var clone=btn.cloneNode(true);btn.parentNode.replaceChild(clone,btn);
-    clone.addEventListener("click",function(){
-      if(!requireAdmin())return alert("Fel lösenord.");
-      if(!confirm("Radera detta tidigare spel?"))return;
-      var id=parseInt(clone.dataset.id,10),list=safeGet(historyKey,[]).filter(function(g){return g.id!==id});
-      safeSet(historyKey,list);renderHistory();renderStats();
-    });
-  });
-};
-
-var oldRenderStats=renderStats;
-renderStats=function(){
-  oldRenderStats();
-  document.querySelectorAll(".delete-player-stats").forEach(function(btn){
-    var clone=btn.cloneNode(true);btn.parentNode.replaceChild(clone,btn);
-    clone.addEventListener("click",function(){
-      if(!requireAdmin())return alert("Fel lösenord.");
-      var name=decodeURIComponent(clone.dataset.name||"");
-      if(!confirm("Radera all statistik för "+name+"?"))return;
-      var history=safeGet(historyKey,[]).map(function(game){
-        game.players=(game.players||[]).filter(function(p){return p.name!==name});return game;
-      }).filter(function(game){return (game.players||[]).length>0});
-      safeSet(historyKey,history);rebuildStats();renderStats();renderHistory();
-    });
-  });
-};
-
-el("clearHof").onclick=function(){
-  if(!requireAdmin())return alert("Fel lösenord.");
-  if(confirm("Radera hela 600-klubben?")){localStorage.removeItem(hofKey);renderHof()}
-};
-el("clearStats").onclick=function(){
-  if(!requireAdmin())return alert("Fel lösenord.");
-  if(confirm("Radera all statistik och alla tidigare spel?")){localStorage.removeItem(statsKey);localStorage.removeItem(historyKey);renderStats();renderHistory()}
-};
-
-document.querySelectorAll(".player-name").forEach(function(x){x.addEventListener("input",renderTokens)});
-el("count").addEventListener("change",renderTokens);
-document.body.classList.remove("game-finished");
-renderTokens();
-calculate();
 
 </script>
 </body>
