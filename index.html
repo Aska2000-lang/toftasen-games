@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="Toftåsen Games">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>Toftåsen Games – Maxi‑Yatzy v19</title>
+<title>Toftåsen Games – Maxi‑Yatzy v21</title>
 <style>
 :root {
   --bg:#f5f1e8; --card:#fffdf8; --ink:#1d261c; --muted:#71766f;
@@ -243,12 +243,51 @@ body.game-finished .hidden-total::after{display:none}
   margin:8px 0;
 }
 
+
+/* v20 – luftigare markörer */
+#extraThrowsCard{padding:18px 16px}
+#extraThrowsCard h2{margin-bottom:14px}
+.token-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+}
+.token-player{
+  padding:14px 10px;
+  border-radius:18px;
+}
+.token-player>b{
+  display:block;
+  font-size:20px;
+  margin-bottom:6px;
+}
+.token-count{
+  width:46px;
+  height:46px;
+  font-size:22px;
+  margin:8px 0 12px;
+}
+.token-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+}
+.token-actions button{
+  width:100%;
+  padding:10px 8px;
+  font-size:14px;
+  line-height:1.1;
+}
+@media(min-width:700px){
+  .token-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+
 </style>
 </head>
 <body>
 <div class="app">
 <section class="card watermarked">
-  <h1>TOFTÅSEN GAMES <span style="display:inline-block;margin-left:8px;padding:3px 7px;border-radius:999px;background:#1d261c;color:#fff;font-size:11px;font-weight:800">v19</span></h1>
+  <h1>TOFTÅSEN GAMES <span style="display:inline-block;margin-left:8px;padding:3px 7px;border-radius:999px;background:#1d261c;color:#fff;font-size:11px;font-weight:800">v21</span></h1>
   <div class="sub">Maxi‑Yatzy</div>
   <div class="controls">
     <label>Datum<input class="field" id="date" type="date"></label>
@@ -276,7 +315,7 @@ body.game-finished .hidden-total::after{display:none}
 <section class="card watermarked" id="extraThrowsCard">
   <h2>🔴 Extra slag <span class="muted">Röda markörer</span></h2>
   <div class="token-grid" id="tokenGrid"></div>
-  <p class="muted" style="margin:6px 0 0">När en spelare väljer att stanna efter fyra lika får spelaren <b>två röda extraslag</b>. Tryck <b>Lägg till 1</b>. Tryck <b>Använd 1</b> varje gång ett extraslag används senare.</p>
+  
 </section>
 
 <section class="card" id="diceCard">
@@ -822,8 +861,6 @@ function buildDice(){
     if(rolling)return;
     rolling=true;
     roll.disabled=true;
-    rollCount++;
-    updateRollCount();
     rollCount++;
     updateRollCount();
     if(status)status.textContent="Tärningarna kastas…";
