@@ -12,11 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="Toftåsen Games">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<<<<<<< HEAD
 <title>Toftåsen Games – Maxi‑Yatzy v18</title>
-=======
-<title>Toftåsen Games – Maxi‑Yatzy v15</title>
->>>>>>> d8099da4d0d6393a2a2bfe3913b8abb50d00340b
 <style>
 :root {
   --bg:#f5f1e8; --card:#fffdf8; --ink:#1d261c; --muted:#71766f;
@@ -157,7 +153,6 @@ body.game-finished .hidden-total::after{display:none}
 .dice-actions{display:flex;gap:8px;flex-wrap:wrap}
 @media(max-width:560px){.token-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.die{font-size:25px}}
 
-<<<<<<< HEAD
 
 .die{transition:transform .08s,background .15s,border-color .15s}
 .die:active{transform:scale(.92)}
@@ -213,18 +208,12 @@ body.game-finished .hidden-total::after{display:none}
   font-weight:950;
 }
 
-=======
->>>>>>> d8099da4d0d6393a2a2bfe3913b8abb50d00340b
 </style>
 </head>
 <body>
 <div class="app">
 <section class="card watermarked">
-<<<<<<< HEAD
   <h1>TOFTÅSEN GAMES <span style="display:inline-block;margin-left:8px;padding:3px 7px;border-radius:999px;background:#1d261c;color:#fff;font-size:11px;font-weight:800">v18</span></h1>
-=======
-  <h1>TOFTÅSEN GAMES <span style="display:inline-block;margin-left:8px;padding:3px 7px;border-radius:999px;background:#1d261c;color:#fff;font-size:11px;font-weight:800">v15</span></h1>
->>>>>>> d8099da4d0d6393a2a2bfe3913b8abb50d00340b
   <div class="sub">Maxi‑Yatzy</div>
   <div class="controls">
     <label>Datum<input class="field" id="date" type="date"></label>
@@ -252,7 +241,7 @@ body.game-finished .hidden-total::after{display:none}
 <section class="card watermarked" id="extraThrowsCard">
   <h2>🔴 Extra slag <span class="muted">Röda markörer</span></h2>
   <div class="token-grid" id="tokenGrid"></div>
-  <p class="muted" style="margin:6px 0 0">När en spelare väljer att stanna efter fyra lika får spelaren <b>två röda extraslag</b>. Tryck <b>Lägg till 2</b>. Tryck <b>Använd 1</b> varje gång ett extraslag används senare.</p>
+  <p class="muted" style="margin:6px 0 0">När en spelare väljer att stanna efter fyra lika får spelaren <b>två röda extraslag</b>. Tryck <b>Lägg till 1</b>. Tryck <b>Använd 1</b> varje gång ett extraslag används senare.</p>
 </section>
 
 <section class="card" id="diceCard">
@@ -261,7 +250,7 @@ body.game-finished .hidden-total::after{display:none}
     <label class="dice-switch"><input type="checkbox" id="diceToggle"><span></span></label>
   </div>
   <div id="dicePanel" class="hidden">
-    <div class="dice-row" id="diceRow"></div>
+    <div class="dice-row" id="diceRow"></div><div class="muted" id="diceStatus" style="text-align:center;margin-top:4px">Tryck på “Slå tärningarna”.</div>
     <div class="dice-actions">
       <button type="button" id="rollDice">Slå tärningarna</button>
       <button type="button" class="alt" id="clearHolds">Släpp alla</button>
@@ -659,11 +648,11 @@ function renderTokens(){
   while(counts.length<8)counts.push(0);
   var html="";
   for(var i=0;i<playerCount;i++){
-    html+='<div class="token-player p'+i+'"><b>'+pname(i)+'</b><div class="muted">Extraslag kvar</div><div><span class="token-count">'+counts[i]+'</span></div><div class="token-actions"><button type="button" class="token-minus alt" data-i="'+i+'">Använd 1</button><button type="button" class="token-plus" data-i="'+i+'">Lägg till 2</button></div></div>';
+    html+='<div class="token-player p'+i+'"><b>'+pname(i)+'</b><div class="muted">Extraslag kvar</div><div><span class="token-count">'+counts[i]+'</span></div><div class="token-actions"><button type="button" class="token-minus alt" data-i="'+i+'">Använd 1</button><button type="button" class="token-plus" data-i="'+i+'">Lägg till 1</button></div></div>';
   }
   el("tokenGrid").innerHTML=html;
   document.querySelectorAll(".token-plus").forEach(function(b){b.addEventListener("click",function(){
-    var n=parseInt(b.dataset.i,10);counts[n]=(counts[n]||0)+2;safeSet(tokenKey,counts);renderTokens();
+    var n=parseInt(b.dataset.i,10);counts[n]=(counts[n]||0)+1;safeSet(tokenKey,counts);renderTokens();
   })});
   document.querySelectorAll(".token-minus").forEach(function(b){b.addEventListener("click",function(){
     var n=parseInt(b.dataset.i,10);counts[n]=Math.max(0,(counts[n]||0)-1);safeSet(tokenKey,counts);renderTokens();
@@ -720,7 +709,6 @@ function renderPodium(totals){
 
 
 function buildDice(){
-<<<<<<< HEAD
   var toggle=document.getElementById("diceToggle");
   var panel=document.getElementById("dicePanel");
   var row=document.getElementById("diceRow");
@@ -829,26 +817,8 @@ function buildDice(){
   toggle.checked=!!safeGet(diceKey,false);
   toggle.addEventListener("change",applyToggle);
   applyToggle();
-=======
-  var values=[1,2,3,4,5,6],held=[false,false,false,false,false,false];
-  var chars=["⚀","⚁","⚂","⚃","⚄","⚅"];
-  function draw(){
-    el("diceRow").innerHTML=values.map(function(v,i){return '<button type="button" class="die '+(held[i]?"held":"")+'" data-i="'+i+'">'+chars[v-1]+'</button>'}).join("");
-    document.querySelectorAll(".die").forEach(function(d){d.addEventListener("click",function(){var i=parseInt(d.dataset.i,10);held[i]=!held[i];draw()})});
-  }
-  el("rollDice").addEventListener("click",function(){
-    for(var i=0;i<6;i++)if(!held[i])values[i]=1+Math.floor(Math.random()*6);
-    draw();
-  });
-  el("clearHolds").addEventListener("click",function(){held=[false,false,false,false,false,false];draw()});
-  draw();
->>>>>>> d8099da4d0d6393a2a2bfe3913b8abb50d00340b
 }
 buildDice();
-var diceEnabled=safeGet(diceKey,false);
-el("diceToggle").checked=!!diceEnabled;
-el("dicePanel").classList.toggle("hidden",!diceEnabled);
-el("diceToggle").addEventListener("change",function(){diceEnabled=el("diceToggle").checked;safeSet(diceKey,diceEnabled);el("dicePanel").classList.toggle("hidden",!diceEnabled)});
 
 
 document.addEventListener("click",function(e){
